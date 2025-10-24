@@ -1,4 +1,3 @@
-
 const Product = require('../models/product');
 
 const product_create_get = (req, res) => {
@@ -30,6 +29,43 @@ const product_create_post = (req,res) => {
         })  
 }
 
+const product_get_details = async (req,res) => {
+    const id = req.params.id;
+    try {
+        const product = await Product.findById(id);
+        res.status(200).send(product);
+        
+    } catch (error) {
+        res.status(404).json({
+            success: false, 
+            message: 'There is no product that you searched it',
+            details: error.details
+        })       
+    }
+}
+
+const product_update = async (req,res) => {
+        const id = req.params.id;
+        try {
+            const product = await Product.findByIdAndUpdate(id, 
+            {
+                //todo fix the json content
+                name: req.params.name,
+                icon: req.params.icon,
+                color: req.params.color
+            }
+        )
+        res.send(product)
+            
+        } catch (error) {
+            res.status(400).json({
+            success: false,
+            messaje: 'There is no peoduct that you searched it'
+        })
+            
+        }
+    }
+
 const product_delete = async (req,res) => {
     const id = req.params.id;
 
@@ -49,5 +85,7 @@ const product_delete = async (req,res) => {
 module.exports = {
     product_create_get,
     product_create_post,
+    product_get_details,
+    product_update,
     product_delete,
 }
