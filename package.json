@@ -8,7 +8,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon main"
+    "start": "nodemon app"
   },
   "dependencies": {
     "body-parser": "^2.2.0",

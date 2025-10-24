@@ -9,7 +9,7 @@ const product_create_get = (req, res) => {
         .catch(err => console.log(err))
 }
 
-const products_create_post = (req,res) => {
+const product_create_post = (req,res) => {
     // const product = new Product(req.body);
     const product = new Product({
         name: req.body.name,
@@ -30,7 +30,24 @@ const products_create_post = (req,res) => {
         })  
 }
 
+const product_delete = async (req,res) => {
+    const id = req.params.id;
+
+    try {
+        const object = await Product.findByIdAndDelete(id)
+        console.log(`DELETE: object ${id} was deleted`);
+        res.send()
+        
+    } catch (error) {
+        return res.status(404).json({
+                error: 'Sunucu tarafında silme işlemi sırasında hata oluştu',
+                details: error.details,
+                success: false,
+            })
+    }
+}
 module.exports = {
     product_create_get,
-    products_create_post
+    product_create_post,
+    product_delete,
 }

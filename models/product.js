@@ -5,14 +5,57 @@ const productSchema = new mongoose.Schema ({
         type: String,
         required: true
     },
+    description: {
+        type: String,
+        required: true
+    },
+    richDescription: {
+        type: String,
+        default: ''
+    },
     image: {
         type: String,
         required: true
     },
+    images: [{
+        type: String,
+        default: ''
+    }],
+    brand: {
+        type: String,
+        default: ''
+    },
+    price: {
+        type: Number,
+        default: 100
+    },
+    category: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category',
+        required: true
+    },
     countInStock: {
         type: Number,
-        default: 0
+        default: 0,
+        min: 0,
+        max: 255
     },
+    rating: {
+        type: Number,
+        default: 0,
+    },
+    numReviews: {
+        type: Number,
+        default: 0,
+    },
+    isFeatured: {
+        type: Boolean,
+        default: false,
+    },
+    dataCreated: {
+        type: Date,
+        default: Date.now,
+    }
 })
 
 const Product = mongoose.model('Product', productSchema);
