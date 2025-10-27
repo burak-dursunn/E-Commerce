@@ -121,10 +121,48 @@ const product_delete = async (req, res) => {
         })
     }
 }
+
+const count_of_products = async (req,res) => {
+    const productCount = await Product.countDocuments();
+
+    if(!productCount) res.status(500).json(
+        {
+            success: false ,
+            messagge: "Count of Product could not taken"
+        })
+
+    res.send({success: true, productCount: productCount});
+}
+
+const get_featured_products = async (req,res) => {
+    try {
+        const count = req.params.count ? +req.params.count : 0;
+        let query = Product.find({isFeatured: true}).populate('category', 'name');
+        if(count > 0) {
+            query = query.limit(count);
+        }
+
+        const featuredProducts = await query;
+        if(featuredProducts.length === 0) {
+            return res.status(404).send({success: false, message:"There are no featured products"})
+        }
+
+        res.send({
+            success: true,
+            length: featuredProducts.length,
+            data: featuredProducts
+        })
+    } catch (error) {
+        res.status(500).send({success: false, message: error.message});
+    }
+}
+
 module.exports = {
     product_create_get,
     product_create_post,
     product_get_details,
     product_update,
     product_delete,
+    count_of_products,
+    get_featured_products
 }
