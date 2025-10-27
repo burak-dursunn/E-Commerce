@@ -58,7 +58,7 @@ const product_update = async (req,res) => {
             res.status(400).json({
             success: false,
             messaje: 'There is no product that you searched it'
-        })
+        },{ new : true})
             
         }
     }
