@@ -1,6 +1,7 @@
 const Product = require('../models/product');
 
 const product_create_get = (req, res) => {
+    //todo rewrite with asynchronous dunction
     Product.find().sort({ createdAt: -1})
         .then(result => {
             res.send(result);
@@ -30,9 +31,8 @@ const product_create_post = (req,res) => {
 }
 
 const product_get_details = async (req,res) => {
-    const id = req.params.id;
     try {
-        const product = await Product.findById(id);
+        const product = await Product.findById(req.params.id);
         res.status(200).send(product);
         
     } catch (error) {
@@ -45,34 +45,29 @@ const product_get_details = async (req,res) => {
 }
 
 const product_update = async (req,res) => {
-        const id = req.params.id;
         try {
-            const product = await Product.findByIdAndUpdate(id, 
+            const product = await Product.findByIdAndUpdate(req.params.id, 
             {
                 //todo fix the json content
                 name: req.params.name,
                 icon: req.params.icon,
                 color: req.params.color
-            }
-        )
-        res.send(product)
-            
+            })
+            res.send(product)
         } catch (error) {
             res.status(400).json({
             success: false,
-            messaje: 'There is no peoduct that you searched it'
+            messaje: 'There is no product that you searched it'
         })
             
         }
     }
 
 const product_delete = async (req,res) => {
-    const id = req.params.id;
-
     try {
-        const object = await Product.findByIdAndDelete(id)
-        console.log(`DELETE: object ${id} was deleted`);
-        res.send()
+        const object = await Product.findByIdAndDelete(req.params.id);
+        console.log(`DELETE: Requested product object "${id}" was deleted`);
+        res.status(201).json({ success: true, message: `DELETE: Product object "${id}" was deleted`})
         
     } catch (error) {
         return res.status(404).json({

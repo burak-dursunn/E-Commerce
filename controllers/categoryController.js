@@ -1,10 +1,16 @@
 const Category = require('../models/category');
 
 const category_create_get = async (req,res) => {
-    const categoryList = await Category.find();
-
-    if(!categoryList) res.status(501).json({success: false})
-    res.send(categoryList);
+    try {
+        const categoryList = await Category.find();
+        res.send(categoryList);
+    } catch (error) {
+        res.status(404).json({
+        success: false, 
+        message: 'There is an error with wihle trying to get the catregoires',
+        details: error.details
+        })
+    }
 }
 
 const category_create_post = async (req,res) => {
@@ -19,18 +25,17 @@ const category_create_post = async (req,res) => {
         res.status(201).send(category); 
     } catch (error) {
         return res.status(404).json({
-            error: 'Sunucu tarafında kategori oluşturulurken hata oluştu',
-            details: error.details,
             success: false,
+            error: 'An error occurred while trying the create the requested category on the server side',
+            details: error.details,
         })
         
     }
 }
 
 const category_get_details = async (req,res) => {
-    const id = req.params.id;
     try {
-        const category = await Category.findById(id);
+        const category = await Category.findById(req.params.id);
         res.status(200).send(category);
         
     } catch (error) {
@@ -43,9 +48,8 @@ const category_get_details = async (req,res) => {
 }
 
 const category_update = async (req,res) => {
-    const id = req.params.id;
     try {
-        const category = await Category.findByIdAndUpdate(id, 
+        const category = await Category.findByIdAndUpdate(req.params.id, 
         {
             name: req.body.name,
             icon: req.body.icon,
@@ -63,15 +67,14 @@ const category_update = async (req,res) => {
 }
 
 const category_delete = async (req,res) => {
-    const id = req.params.id;
-
     try {
-        const object = await Category.findByIdAndDelete(id)
-        res.status(201).json({ success: true, message: `DELETE: Catrgory object ${id} was deleted`})
+        const object = await Category.findByIdAndDelete(req.params.id);
+        console.log(`DELETE: Requested category object "${id}" was deleted`);
+        res.status(201).json({ success: true, message: `DELETE: Catrgory object "${id}" was deleted`})
         
     } catch (error) {
         return res.status(404).json({
-                error: 'Sunucu tarafında silme işlemi sırasında hata oluştu',
+                error: 'An error occured while trying the delete the requsted category object',
                 details: error.details,
                 success: false,
             })
