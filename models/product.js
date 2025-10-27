@@ -58,6 +58,9 @@ const productSchema = new mongoose.Schema ({
     }
 })
 
+//todo try to create a virtual ID for frontend compatibility.
+//todo for better API/frontend integration.
+
 const Product = mongoose.model('Product', productSchema);
 
 module.exports = Product;

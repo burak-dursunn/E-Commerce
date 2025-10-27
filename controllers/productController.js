@@ -4,21 +4,29 @@ const mongoose= require('mongoose');
 
 const product_create_get = async (req, res) => {
     try {
-        const productList = await Product.find().sort({ dataCreated: -1 }).populate('category', 'name');
-
-        if (!productList) {
-            return res.status(500).send("An error occurred while fetching products.");
+        //! http://localhost:3000/api/v1/products?categories=1234,4213,...
+        let filter = {};
+        if(req.query.categories) {
+            const categoryIds = req.query.categories.split(',').map(categories => categories.trim());
+            filter = {category: categoryIds};
         }
 
+        const productList = await Product.find(filter).sort({ dataCreated: -1 }).populate('category', 'name');
         if (productList.length === 0) {
             return res.status(200).json({ message: "No products found", data: [] });
         }
+        //! Get the product names
+        const productNames = productList.map(e => e.name);
 
-        //* GET request successful
-        res.status(200).json(productList)
+        //* GET request is successful
+        res.status(200).json({
+            productLenght: productList.length,
+            productNames : productNames,
+            productList: productList
+        })
 
     } catch (error) {
-        res.status(500).json({ success: false, message: "Internal Server Error" })
+        res.status(500).json({ success: false, errorDetails: error.message })
 
     }
 }
