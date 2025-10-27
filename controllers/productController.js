@@ -1,80 +1,124 @@
+const Category = require('../models/category');
 const Product = require('../models/product');
+const mongoose= require('mongoose');
 
-const product_create_get = (req, res) => {
-    //todo rewrite with asynchronous dunction
-    Product.find().sort({ createdAt: -1})
-        .then(result => {
-            res.send(result);
-        })
-        .catch(err => console.log(err))
-}
-
-const product_create_post = (req,res) => {
-    // const product = new Product(req.body);
-    const product = new Product({
-        name: req.body.name,
-        image: req.body.image,
-        countInStock: req.body.countInStock
-    })
-    product.save()
-        .then(createdProduct => {
-            console.log('POST işlemi başarılı')
-            res.status(201).json(createdProduct);
-        })
-        .catch(err => {
-            console.log(`Ürün kaydetme sırasında hata: ${err}`);
-            res.status(500).json({
-                eroor: err,
-                success: false
-            })
-        })  
-}
-
-const product_get_details = async (req,res) => {
+const product_create_get = async (req, res) => {
     try {
-        const product = await Product.findById(req.params.id);
+        const productList = await Product.find().sort({ dataCreated: -1 }).populate('category', 'name');
+
+        if (!productList) {
+            return res.status(500).send("An error occurred while fetching products.");
+        }
+
+        if (productList.length === 0) {
+            return res.status(200).json({ message: "No products found", data: [] });
+        }
+
+        //* GET request successful
+        res.status(200).json(productList)
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Internal Server Error" })
+
+    }
+}
+
+const product_create_post = async (req, res) => {
+    try {
+        const category = await Category.findById(req.body.category);
+        if (!category) {
+            return res.status(400).send('No category found with the provided ID.');
+        }
+
+        const product = new Product({
+            name: req.body.name,
+            description: req.body.description,
+            richDescription: req.body.richDescription,
+            image: req.body.image,
+            images: req.body.images,
+            brand: req.body.brand,
+            price: req.body.price,
+            category: req.body.category,
+            countInStock: req.body.countInStock,
+            rating: req.body.rating,
+            numReviews: req.body.numReviews,
+            isFeatured: req.body.isFeatured,
+            dateCreated: req.body.dateCreated
+        });
+
+        const savedProduct = await product.save();
+        if (!savedProduct) {
+            return res.status(500).send('The product could not be created.');
+        }
+        //* Product Creation successful
+        res.status(201).send(savedProduct);
+
+    } catch (err) {
+        res.status(500).send('An unexpected error occurred.');
+        console.error(err);
+    }
+};
+
+
+const product_get_details = async (req, res) => {
+    try {
+        const product = await Product.findById(req.params.id).populate('category','name');
         res.status(200).send(product);
-        
+
     } catch (error) {
         res.status(404).json({
-            success: false, 
+            success: false,
             message: 'There is no product that you searched it',
             details: error.details
-        })       
+        })
     }
 }
 
-const product_update = async (req,res) => {
-        try {
-            const product = await Product.findByIdAndUpdate(req.params.id, 
+const product_update = async (req, res) => {
+    //todo Aşağıdaki şekilde bir promise yapısı izlenebilir.
+    //todo if(!mongoose.isValidObjectId(req.params.id)) res.status(400).send("Invalid Product ID");
+    try {
+        const category = await Category.findById(req.body.category);
+        if(!category) res.status(400).send("Invalid Category ID");
+
+        const product = await Product.findByIdAndUpdate(req.params.id,
             {
-                //todo fix the json content
-                name: req.params.name,
-                icon: req.params.icon,
-                color: req.params.color
-            })
-            res.send(product)
-        } catch (error) {
-            res.status(400).json({
+                name: req.body.name,
+                description: req.body.description,
+                richDescription: req.body.richDescription,
+                image: req.body.image,
+                images: req.body.images,
+                brand: req.body.brand,
+                price: req.body.price,
+                category: req.body.category,
+                countInStock: req.body.countInStock,
+                rating: req.body.rating,
+                numReviews: req.body.numReviews,
+                isFeatured: req.body.isFeatured,
+                dateCreated: req.body.dateCreated
+            }, { new: true}).populate('category', 'name');
+        res.send(product)
+    } catch (error) {
+        res.status(400).json({
             success: false,
             messaje: 'There is no product that you searched it'
-        },{ new : true})
-            
-        }
-    }
+        }, { new: true }) //? "new : true" line ensure the showing the updated product details in the console
 
-const product_delete = async (req,res) => {
+    }
+}
+
+const product_delete = async (req, res) => {
     try {
         const object = await Product.findByIdAndDelete(req.params.id);
         console.log(`DELETE: Requested product object "${id}" was deleted`);
-        res.status(201).json({ success: true, message: `DELETE: Product object "${id}" was deleted`})
-        
+        res.status(201).json({ success: true, message: `DELETE: Product object "${id}" was deleted` })
+
     } catch (error) {
         return res.status(404).json({
-                error: 'Sunucu tarafında silme işlemi sırasında hata oluştu',
-                details: error.details,
-                success: false,
-            })
+            error: 'Sunucu tarafında silme işlemi sırasında hata oluştu',
+            details: error.details,
+            success: false,
+        })
     }
 }
 module.exports = {

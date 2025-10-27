@@ -1,5 +1,5 @@
 const Category = require('../models/category');
-
+const mongoose= require('mongoose');
 const category_create_get = async (req,res) => {
     try {
         const categoryList = await Category.find();
@@ -19,7 +19,6 @@ const category_create_post = async (req,res) => {
         icon: req.body.icon,
         color: req.body.color,
     })
-    //todo Asenkron yapı
     try {
         createdCategory = await category.save();
         res.status(201).send(category); 
@@ -48,13 +47,14 @@ const category_get_details = async (req,res) => {
 }
 
 const category_update = async (req,res) => {
+    
     try {
         const category = await Category.findByIdAndUpdate(req.params.id, 
         {
             name: req.body.name,
             icon: req.body.icon,
             color: req.body.color
-        }, { new : true})
+        }, { new : true}) //? "new : true" line ensure the showing the updated product details in the console
         res.send(category)
         
     } catch (error) {
