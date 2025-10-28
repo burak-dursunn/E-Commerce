@@ -53,7 +53,6 @@ const product_create_post = async (req, res) => {
             isFeatured: req.body.isFeatured,
             dateCreated: req.body.dateCreated
         });
-
         const savedProduct = await product.save();
         if (!savedProduct) {
             return res.status(500).send('The product could not be created.');

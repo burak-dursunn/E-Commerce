@@ -43,5 +43,5 @@ app.use((req, res, next) => {
 //! Products Route
 app.use(`${api}/products`, productRoutes)
 app.use(`${api}/categories`, categoryRoutes)
-//todo app.use(`${api}/users`, userRoutes)
+app.use(`${api}/users`, userRoutes)
 //todo app.use(`${api}/orders`, orderRoutes)
