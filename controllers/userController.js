@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 
 const user_get = async (req, res) => {
     try {
-        const users = await User.find().sort({ dateCreated: -1 }).select('-passwordHash');
+        const users = await User.find().sort({ dateCreated: -1 });
         const countOfUsers = await User.countDocuments();
         res.status(200).json({
             success: true,
@@ -61,6 +61,7 @@ const get_user_details = async(req,res) => {
     }
 
 }
+
 const delete_user = async (req, res) => {
     try {
         const id = req.params.id;
@@ -89,18 +90,28 @@ const delete_user = async (req, res) => {
 const user_login = async (req,res) => {
     try {
         const user = await User.findOne({ email: req.body.email});
-        const secret = process.env.JWT_TOKEN;
+        const secret = process.env.JWT_SECRET;
 
         if(!user)
             return res.status(400).send("User not found")
-        if(user && bcrypt.compare(req.body.password, user.passwordHash)) {
+        
+        const passwordIsValid = await bcrypt.compare(req.body.password, user.passwordHash)
+        if(user && passwordIsValid) {
+            //! jwt.sign() işlemi
             const token = jwt.sign({
-                userId: user.id
+                userId: user.id,
+                isAdmin: user.isAdmin
             },
             secret,
             {expiresIn: '1d'})
 
-            res.status(200).send({user: user.email, token: token})
+            res.status(200).send({
+                name: user.name,
+                email: user.email,
+                id: user.id,
+                isAdmin: user.isAdmin,
+                token: token
+            })
         } else {
             res.status(400).send('the password you entered it is wrong')
         }
@@ -108,7 +119,18 @@ const user_login = async (req,res) => {
     } catch (error) {
         res.status(505).json({success: false, message: error.message});
     }
+}
 
+const count_of_users = async (req,res) => {
+    const userCount = await User.countDocuments();
+
+    if(!userCount) res.status(500).json(
+        {
+            success: false ,
+            messagge: "Count of User could not taken"
+        })
+
+    res.send({success: true, userCount: userCount});
 }
 
 
@@ -119,4 +141,5 @@ module.exports = {
     user_post,
     delete_user,
     user_login,
+    count_of_users,
 }
