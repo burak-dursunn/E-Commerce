@@ -6,7 +6,7 @@ function errorHandler(err,req,res,next) {
         res.status(400).send(err)
     }
 
-    return res.status(500).json({name: err.name, message: err.message || 'Interval server error'})
+    return res.status(500).json({name: err.name, details: err})
 
 }
 

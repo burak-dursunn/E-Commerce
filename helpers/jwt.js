@@ -16,11 +16,16 @@ function authJwt() {
         ]
     });
 }
-async function isRevoked(req, payload) {
-        if(!payload.isAdmin)
-            return true;
+async function isRevoked(req, token) {
 
-        return false
+    if(!token) return true;
+
+    const isAdmin = token.payload.isAdmin;
+    console.log(token.payload);
+    if(!isAdmin) {
+        return true; //? Deny access if not admin
+    }
+    return false; //? if the user who just logged in is admin then allow access
 }
 
 module.exports = authJwt;
