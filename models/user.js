@@ -13,14 +13,14 @@ const userSchema = new mongoose.Schema ({
         type: String,
         default: 0
     },
-    phone: {
-        type: String,
-        required: true,
-    },
     isAdmin: {
         type: Boolean,
         required: true,
     
+    },
+    phone: {
+        type: String,
+        required: true,
     },
     country: {
         type: String,
