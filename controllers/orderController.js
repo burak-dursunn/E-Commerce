@@ -1,26 +1,26 @@
-const Order = require('../models/order');
+const { Order } = require('../models/order');
 const OrderItem = require('../models/order-item');
 
 
 const post_order = async (req,res) => {
 
     try {
-        //! Order İtemleri tek tek kaydet
-        const orderItemsIds = req.body.orderItems.map(async orderItems => {
+        //! Save each order item individually.
+        const orderItemsIds = await Promise.all(
+            req.body.orderItems.map(async orderItem => {
             let newOrderItem =new OrderItem({
-                quantity: req.body.quantity,
-                product: req.body.product
+                quantity: orderItem.quantity,
+                product: orderItem.product
             })
             newOrderItem = await newOrderItem.save();
     
-            return newOrderItem._id;
-            
-        })
+            return newOrderItem._id;            
+        }))
     
-        //! Siparişi oluştur.
+        //! Create the order.
         const order = new Order({
             orderItems: orderItemsIds,
-            satutus: req.body.status,
+            status: req.body.status,
             shippingAdress1: req.body.shippingAdress1,
             shippingAdress2: req.body.shippingAdress2,
             country: req.body.country,
@@ -34,11 +34,11 @@ const post_order = async (req,res) => {
         const savedOrder = await order.save();
         if(!savedOrder) {
             return res.status(500).send('the order could not be saved')
-    
         }
         //* Order Creation Successfull
         res.status(201).send(savedOrder);
     } catch (error) {
+        console.log(error);
         res.status(500).json({ success: false, message: error.message});
     }
 }

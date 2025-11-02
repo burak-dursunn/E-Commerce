@@ -20,7 +20,7 @@ const orderSchema = mongoose.Schema({
         required: true
     },
     country: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'User',
         required: true,
     },
