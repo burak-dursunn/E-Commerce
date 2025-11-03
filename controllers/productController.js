@@ -1,14 +1,14 @@
 const Category = require('../models/category');
 const Product = require('../models/product');
-const mongoose= require('mongoose');
+const mongoose = require('mongoose');
 
 const product_create_get = async (req, res) => {
     try {
         //! http://localhost:3000/api/v1/products?categories=1234,4213,...
         let filter = {};
-        if(req.query.categories) {
+        if (req.query.categories) {
             const categoryIds = req.query.categories.split(',').map(categories => categories.trim());
-            filter = {category: categoryIds};
+            filter = { category: categoryIds };
         }
 
         const productList = await Product.find(filter).sort({ dataCreated: -1 }).populate('category', 'name');
@@ -21,7 +21,7 @@ const product_create_get = async (req, res) => {
         //* GET request is successful
         res.status(200).json({
             productLenght: productList.length,
-            productNames : productNames,
+            productNames: productNames,
             productList: productList
         })
 
@@ -69,7 +69,7 @@ const product_create_post = async (req, res) => {
 
 const product_get_details = async (req, res) => {
     try {
-        const product = await Product.findById(req.params.id).populate('category','name');
+        const product = await Product.findById(req.params.id).populate('category', 'name');
         res.status(200).send(product);
 
     } catch (error) {
@@ -86,7 +86,7 @@ const product_update = async (req, res) => {
     //todo if(!mongoose.isValidObjectId(req.params.id)) res.status(400).send("Invalid Product ID");
     try {
         const category = await Category.findById(req.body.category);
-        if(!category) res.status(400).send("Invalid Category ID");
+        if (!category) res.status(400).send("Invalid Category ID");
 
         const product = await Product.findByIdAndUpdate(req.params.id,
             {
@@ -103,13 +103,14 @@ const product_update = async (req, res) => {
                 numReviews: req.body.numReviews,
                 isFeatured: req.body.isFeatured,
                 dateCreated: req.body.dateCreated
-            }, { new: true}).populate('category', 'name');
+            }, { new: true }).populate('category', 'name');
+            //? "new : true" line ensure the showing the updated product details in the console
         res.send(product)
     } catch (error) {
         res.status(400).json({
             success: false,
-            messaje: 'There is no product that you searched it'
-        }, { new: true }) //? "new : true" line ensure the showing the updated product details in the console
+            message: 'There is no product that you searched it'
+        }) 
 
     }
 }
@@ -129,29 +130,29 @@ const product_delete = async (req, res) => {
     }
 }
 
-const count_of_products = async (req,res) => {
+const count_of_products = async (req, res) => {
     const productCount = await Product.countDocuments();
 
-    if(!productCount) res.status(500).json(
+    if (!productCount) res.status(500).json(
         {
-            success: false ,
+            success: false,
             messagge: "Count of Product could not taken"
         })
 
-    res.send({success: true, productCount: productCount});
+    res.send({ success: true, productCount: productCount });
 }
 
-const get_featured_products = async (req,res) => {
+const get_featured_products = async (req, res) => {
     try {
         const count = req.params.count ? +req.params.count : 0;
-        let query = Product.find({isFeatured: true}).populate('category', 'name');
-        if(count > 0) {
+        let query = Product.find({ isFeatured: true }).populate('category', 'name');
+        if (count > 0) {
             query = query.limit(count);
         }
 
         const featuredProducts = await query;
-        if(featuredProducts.length === 0) {
-            return res.status(404).send({success: false, message:"There are no featured products"})
+        if (featuredProducts.length === 0) {
+            return res.status(404).send({ success: false, message: "There are no featured products" })
         }
 
         res.send({
@@ -160,7 +161,7 @@ const get_featured_products = async (req,res) => {
             data: featuredProducts
         })
     } catch (error) {
-        res.status(500).send({success: false, message: error.message});
+        res.status(500).send({ success: false, message: error.message });
     }
 }
 
