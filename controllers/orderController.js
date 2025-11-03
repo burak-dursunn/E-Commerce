@@ -3,14 +3,17 @@ const OrderItem = require('../models/order-item');
 
 const get_orders = async (req, res) => {
     try {
-        const order = await Order.find().populate({
-            path: 'orderItems',
-            select: '-quantity',
-            populate: {
-                path: 'product',
-                select: 'name price'
-            }
-        });
+        const order = await Order.find()
+            .populate({
+                path: 'orderItems',
+                populate: {
+                    path: 'product',
+                    select: 'name price'
+                }
+            }).populate({
+                path: 'user',
+                select: 'name'
+            }).sort({ dataOrdered: -1 });
         res.status(200).send(order);
 
     } catch (error) {
@@ -97,13 +100,13 @@ const update_order = async (req, res) => {
                 totalPrice: req.body.totalPrice,
                 user: req.body.user,
             }, { new: true }); //? "new : true" line ensure the showing the updated product details in the console
-            res.status(200).send(updatedOrder);
+        res.status(200).send(updatedOrder);
 
     } catch (error) {
         res.status(400).json({
             success: false,
             message: error.message || 'There is no order that you searched it'
-        }) 
+        })
 
     }
 }
@@ -111,19 +114,42 @@ const update_order = async (req, res) => {
 
 const delete_order = async (req, res) => {
     try {
-        const deletedOrder = await Order.findByIdAndDelete(req.params.id);
+        const id = req.params.id;
+        const order = await Order.findById(id);
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        //! OrderItems deletion proccess || Deleting the OrderItems that inside the Orders
+        for(const itemId of order.orderItems) {
+            try {
+                await OrderItem.findByIdAndDelete(itemId);
+                console.log(`Item ${itemId} has deleted`)
+            } catch (error) {
+                console.error('OrderItem silme hatası:', error.message);
+                return res.status(500).json({
+                    success: false,
+                    message: 'OrderItems: Sunucu tarafında silme işlemi sırasında hata oluştu',
+                    details: error.message
+                });   
+            }
+        }
+
+        //! Deleting the order
+        const deletedOrder = await Order.findByIdAndDelete(id);
         console.log(`DELETE: Requested Order "${id}" was deleted`);
-        res.status(201).json({ success: true, message: `DELETE: Order "${id}" was deleted` })
+        res.status(200).json({ success: true, message: `DELETE: Order "${id}" was deleted` })
+        
     } catch (error) {
         return res.status(404).json({
-            error: 'Sunucu tarafında silme işlemi sırasında hata oluştu',
-            details: error.details,
+            error: 'ORDER: Sunucu tarafında silme işlemi sırasında hata oluştu',
+            details: error.message,
             success: false,
         })
-
     }
-
-
 }
 
 module.exports = {
