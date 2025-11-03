@@ -1,20 +1,38 @@
 const { Order } = require('../models/order');
 const OrderItem = require('../models/order-item');
+const Product = require('../models/product');
 
 const get_orders = async (req, res) => {
     try {
-        const order = await Order.find()
+        //! http://localhost:3000/api/v1/orders?products=1234,53438,...
+        let filter = {};
+        let productNames = [];
+        if (req.query.products) {
+            const productIds = req.query.products.split(',').map(e => e.trim())
+            const orderItems = await OrderItem.find({ product: { $in: productIds } }).select('_id');
+            console.log(orderItems);
+            filter = { orderItems: { $in: orderItems.map(item => item._id) } };
+
+            const products = await Product.find({ _id: { $in: productIds } }).select('name');
+            productNames = products.map(p => p.name)
+
+        }
+
+        const orders = await Order.find(filter)
             .populate({
                 path: 'orderItems',
                 populate: {
                     path: 'product',
                     select: 'name price'
                 }
-            }).populate({
-                path: 'user',
-                select: 'name'
-            }).sort({ dataOrdered: -1 });
-        res.status(200).send(order);
+            }).populate('user', 'name').
+            sort({ dataOrdered: -1 });
+        res.status(200).json({
+            success: true,
+            orderLength: orders.length,
+            productNames: productNames,
+            Orders: orders
+        });
 
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -124,7 +142,7 @@ const delete_order = async (req, res) => {
         }
 
         //! OrderItems deletion proccess || Deleting the OrderItems that inside the Orders
-        for(const itemId of order.orderItems) {
+        for (const itemId of order.orderItems) {
             try {
                 await OrderItem.findByIdAndDelete(itemId);
                 console.log(`Item ${itemId} has deleted`)
@@ -134,7 +152,7 @@ const delete_order = async (req, res) => {
                     success: false,
                     message: 'OrderItems: Sunucu tarafında silme işlemi sırasında hata oluştu',
                     details: error.message
-                });   
+                });
             }
         }
 
@@ -142,7 +160,7 @@ const delete_order = async (req, res) => {
         const deletedOrder = await Order.findByIdAndDelete(id);
         console.log(`DELETE: Requested Order "${id}" was deleted`);
         res.status(200).json({ success: true, message: `DELETE: Order "${id}" was deleted` })
-        
+
     } catch (error) {
         return res.status(404).json({
             error: 'ORDER: Sunucu tarafında silme işlemi sırasında hata oluştu',

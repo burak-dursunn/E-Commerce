@@ -21,7 +21,6 @@ const orderSchema = mongoose.Schema({
     },
     country: {
         type: String,
-        ref: 'User',
         required: true,
     },
     city: {

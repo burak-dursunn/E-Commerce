@@ -7,7 +7,7 @@ const product_create_get = async (req, res) => {
         //! http://localhost:3000/api/v1/products?categories=1234,4213,...
         let filter = {};
         if (req.query.categories) {
-            const categoryIds = req.query.categories.split(',').map(categories => categories.trim());
+            const categoryIds = req.query.categories.split(',').map(category => category.trim());
             filter = { category: categoryIds };
         }
 
