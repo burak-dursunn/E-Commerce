@@ -3,6 +3,7 @@ const OrderItem = require('../models/order-item');
 const Product = require('../models/product');
 
 const get_orders = async (req, res) => {
+    //todo buraya yine bakıcam boka sardı
     try {
         //! http://localhost:3000/api/v1/orders?products=1234,53438,...
         let filter = {};
