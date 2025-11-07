@@ -3,7 +3,6 @@ const OrderItem = require('../models/order-item');
 const Product = require('../models/product');
 
 const get_orders = async (req, res) => {
-    //todo buraya yine bakıcam boka sardı
     try {
         //! http://localhost:3000/api/v1/orders?products=1234,53438,...
         let filter = {};
@@ -11,12 +10,11 @@ const get_orders = async (req, res) => {
         if (req.query.products) {
             const productIds = req.query.products.split(',').map(e => e.trim())
             const orderItems = await OrderItem.find({ product: { $in: productIds } }).select('_id');
-            console.log(orderItems);
+            console.log("Items that include the products that givin on the query:\n", orderItems);
             filter = { orderItems: { $in: orderItems.map(item => item._id) } };
 
             const products = await Product.find({ _id: { $in: productIds } }).select('name');
             productNames = products.map(p => p.name)
-
         }
 
         const orders = await Order.find(filter)
@@ -65,6 +63,13 @@ const post_order = async (req, res) => {
 
                 return newOrderItem._id;
             }))
+            const totalPrices = await Promise.all(
+                orderItemsIds.map(async orderItemId => {
+                    const order = await OrderItem.findById(orderItemId).populate('product', 'price');
+                    return order.product.price * order.quantity;
+            }))
+
+            const totalPrice = totalPrices.reduce((a,b) => a+b, 0);
 
         //! Create the order.
         const order = new Order({
@@ -76,7 +81,7 @@ const post_order = async (req, res) => {
             city: req.body.city,
             zip: req.body.zip,
             phone: req.body.phone,
-            totalPrice: req.body.totalPrice,
+            totalPrice: totalPrice,
             user: req.body.user,
         })
 
@@ -146,7 +151,7 @@ const delete_order = async (req, res) => {
         for (const itemId of order.orderItems) {
             try {
                 await OrderItem.findByIdAndDelete(itemId);
-                console.log(`Item ${itemId} has deleted`)
+                console.log(`OrderItem ${itemId} has deleted`)
             } catch (error) {
                 console.error('OrderItem silme hatası:', error.message);
                 return res.status(500).json({
@@ -158,7 +163,7 @@ const delete_order = async (req, res) => {
         }
 
         //! Deleting the order
-        const deletedOrder = await Order.findByIdAndDelete(id);
+        const deletedOrder = await Order.findByIdAndDelete(id);  
         console.log(`DELETE: Requested Order "${id}" was deleted`);
         res.status(200).json({ success: true, message: `DELETE: Order "${id}" was deleted` })
 

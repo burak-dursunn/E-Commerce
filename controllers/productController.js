@@ -51,7 +51,6 @@ const product_create_post = async (req, res) => {
             rating: req.body.rating,
             numReviews: req.body.numReviews,
             isFeatured: req.body.isFeatured,
-            dateCreated: req.body.dateCreated
         });
         const savedProduct = await product.save();
         if (!savedProduct) {
@@ -165,6 +164,19 @@ const get_featured_products = async (req, res) => {
     }
 }
 
+const product_get_ids = async (req,res) => {
+    try {
+        const products = await Product.find().select('_id name');
+        
+        res.status(200).json({ 
+            success: true,
+            categorys: products
+        });
+    } catch (error) {
+        res.status(500).json({ succes: false, message: error.message});
+    }  
+}
+
 module.exports = {
     product_create_get,
     product_create_post,
@@ -172,5 +184,6 @@ module.exports = {
     product_update,
     product_delete,
     count_of_products,
-    get_featured_products
+    get_featured_products,
+    product_get_ids
 }

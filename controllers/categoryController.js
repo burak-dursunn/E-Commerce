@@ -12,7 +12,6 @@ const category_create_get = async (req,res) => {
         })
     }
 }
-
 const category_create_post = async (req,res) => {
     const category = new Category ({
         name: req.body.name,
@@ -30,6 +29,19 @@ const category_create_post = async (req,res) => {
         })
         
     }
+}
+
+const only_ids = async (req,res) => {
+    try {
+        const categories = await Category.find().select('_id name');
+        
+        res.status(200).json({ 
+            success: true,
+            categorys: categories
+        });
+    } catch (error) {
+        res.status(500).json({ succes: false, message: error.message});
+    }  
 }
 
 const category_get_details = async (req,res) => {
@@ -85,6 +97,7 @@ module.exports = {
     category_create_get,
     category_create_post,
     category_get_details,
+    only_ids,
     category_update,
     category_delete,
 }
