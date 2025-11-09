@@ -19,7 +19,7 @@ const get_orders = async (req, res) => {
         }
 
         const orders = await Order.find(filter)
-        
+
             .populate({
                 path: 'orderItems',
                 populate: {
@@ -65,13 +65,13 @@ const post_order = async (req, res) => {
 
                 return newOrderItem._id;
             }))
-            const totalPrices = await Promise.all(
-                orderItemsIds.map(async orderItemId => {
-                    const order = await OrderItem.findById(orderItemId).populate('product', 'price');
-                    return order.product.price * order.quantity;
+        const totalPrices = await Promise.all(
+            orderItemsIds.map(async orderItemId => {
+                const order = await OrderItem.findById(orderItemId).populate('product', 'price');
+                return order.product.price * order.quantity;
             }))
 
-            const totalPrice = totalPrices.reduce((a,b) => a+b, 0);
+        const totalPrice = totalPrices.reduce((a, b) => a + b, 0);
 
         //! Create the order.
         const order = new Order({
@@ -165,7 +165,7 @@ const delete_order = async (req, res) => {
         }
 
         //! Deleting the order
-        const deletedOrder = await Order.findByIdAndDelete(id);  
+        const deletedOrder = await Order.findByIdAndDelete(id);
         console.log(`DELETE: Requested Order "${id}" was deleted`);
         res.status(200).json({ success: true, message: `DELETE: Order "${id}" was deleted` })
 
@@ -178,36 +178,72 @@ const delete_order = async (req, res) => {
     }
 }
 
-const get_totalSales = async (req,res) => {
+const get_totalSales = async (req, res) => {
     const totalSales = await Order.aggregate([
-        { $group: { _id: null, totalSales: { $sum: '$totalPrice'}}}
+        { $group: { _id: null, totalSales: { $sum: '$totalPrice' } } }
     ])
 
-    if(!totalSales || totalSales.length === 0) res.status(400).send('the order sales cannot be generated');
-    
-    res.send({ totalSales: totalSales});
+    if (!totalSales || totalSales.length === 0) res.status(400).send('the order sales cannot be generated');
+
+    res.send({ totalSales: totalSales });
 
 
 }
 
-const best_seller = async (req,res) => {
+const best_seller = async (req, res) => {
     try {
         const bestSeller = await Order.aggregate([
-            { $unwind: '$orderItems'},
-            { $lookup: { from: 'orderitems', localField: 'orderItems', foreignField: '_id', as: 'itemData'}},
-            { $unwind: '$itemData'},
-            { $lookup: { from: 'products', localField: 'itemData.product', foreignField: '_id', as: 'productData'}},
-            { $unwind: '$productData'},
-            { $group: { _id: '$productData.name', totalSold: { $sum: '$itemData.quantity'}}},
-            { $sort: { totalSold: -1}},
-            { $project: { _id: 1, product: '$productData.name', totalSold: 1}},
+            { $unwind: '$orderItems' },
+            { $lookup: { from: 'orderitems', localField: 'orderItems', foreignField: '_id', as: 'itemData' } },
+            { $unwind: '$itemData' },
+            { $lookup: { from: 'products', localField: 'itemData.product', foreignField: '_id', as: 'productData' } },
+            { $unwind: '$productData' },
+            { $group: { _id: '$productData.name', totalSold: { $sum: '$itemData.quantity' } } },
+            { $sort: { totalSold: -1 } },
+            { $project: { _id: 1, product: '$productData.name', totalSold: 1 } },
         ])
-        if(bestSeller.length === 0){
+        if (bestSeller.length === 0) {
             return res.status(400).send('Empty List');
         }
         res.send(bestSeller)
     } catch (error) {
-        res.status(500).send({ success: false, message: error.message});
+        res.status(500).send({ success: false, message: error.message });
+    }
+}
+
+const most_profitable = async (req, res) => {
+    try {
+        const profitableProducts = await Order.aggregate([
+            { $unwind: '$orderItems' },
+            { $lookup: { from: 'orderitems', localField: 'orderItems', foreignField: '_id', as: 'itemData' } },
+            { $unwind: '$itemData' },
+            { $lookup: { from: 'products', localField: 'itemData.product', foreignField: '_id', as: 'productData' } },
+            { $unwind: '$productData' },
+            {
+                $group: {
+                    _id: '$productData.name', totalProfit: { $sum: { $multiply: ['$productData.price', '$itemData.quantity'] } },
+                    price: {$sum: '$productData.price'},
+                    totalSold: { $sum: '$itemData.quantity' }
+                }
+            },
+            { $sort: { totalProfit: -1 } },
+            {
+                $project: {
+                    _id: 1,
+                    Price: '$price',
+                    Sold: '$totalSold',
+                    Profit: '$totalProfit'
+                }
+            }
+        ])
+        if (profitableProducts.length === 0) {
+            return res.status(400).send('Empty List');
+        }
+
+        res.send(profitableProducts);
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ success: false, message: error.message })
     }
 }
 
@@ -218,5 +254,6 @@ module.exports = {
     update_order,
     delete_order,
     get_totalSales,
-    best_seller
+    best_seller,
+    most_profitable
 }

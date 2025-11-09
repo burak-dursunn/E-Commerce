@@ -9,6 +9,8 @@ router.put('/:id', orderController.update_order);
 router.delete('/:id', orderController.delete_order);
 router.get('/get/total-sales', orderController.get_totalSales);
 router.get('/get/best-seller', orderController.best_seller);
+router.get('/get/most-profitable', orderController.most_profitable);
+
 
 
 module.exports = router;
