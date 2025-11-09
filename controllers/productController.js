@@ -177,6 +177,7 @@ const product_get_ids = async (req, res) => {
     }
 }
 
+//! Kategorilere göre gruplama
 const accumulator = async (req, res) => {
     const accumulate = await Product.aggregate([
         {
@@ -190,31 +191,23 @@ const accumulator = async (req, res) => {
         {
             $unwind: '$categoryData'
         },
-        { $group: { _id: '$categoryData._id', categoryName: { $first: '$categoryData.name'}, productInclude: {$sum: 1}, productNames: { $push: '$name' }} },
+        { $group: { _id: '$categoryData._id', categoryName: { $first: '$categoryData.name'}, 
+                    productInclude: {$sum: 1}, productNames: { $push: '$name' }, 
+                    totalPrice: {$sum: '$price'}} },
         {
             $project: {
                 _id: 0,
                 categoryId: '$_id',
                 categoryName: 1,
                 productInclude: 1,
-                productNames: 1
+                productNames: 1,
+                totalPrice: 1
             }
         }
     ])
 
     if (accumulate.length == 0) res.send(400).send('The product informations cannot generetad');
     res.send(accumulate);
-}
-
-const category_products = async (req, res) => {
-    const count = await Product.aggregate([
-        { $group: { _id: '$category', productCount: { $sum: 1 } } }
-    ])
-
-    res.json({
-        productCount: count,
-    });
-
 }
 
 module.exports = {

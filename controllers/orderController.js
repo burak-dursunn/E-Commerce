@@ -1,3 +1,4 @@
+const { multiply } = require('lodash');
 const { Order } = require('../models/order');
 const OrderItem = require('../models/order-item');
 const Product = require('../models/product');
@@ -189,11 +190,33 @@ const get_totalSales = async (req,res) => {
 
 }
 
+const best_seller = async (req,res) => {
+    try {
+        const bestSeller = await Order.aggregate([
+            { $unwind: '$orderItems'},
+            { $lookup: { from: 'orderitems', localField: 'orderItems', foreignField: '_id', as: 'itemData'}},
+            { $unwind: '$itemData'},
+            { $lookup: { from: 'products', localField: 'itemData.product', foreignField: '_id', as: 'productData'}},
+            { $unwind: '$productData'},
+            { $group: { _id: '$productData.name', totalSold: { $sum: '$itemData.quantity'}}},
+            { $sort: { totalSold: -1}},
+            { $project: { _id: 1, product: '$productData.name', totalSold: 1}},
+        ])
+        if(bestSeller.length === 0){
+            return res.status(400).send('Empty List');
+        }
+        res.send(bestSeller)
+    } catch (error) {
+        res.status(500).send({ success: false, message: error.message});
+    }
+}
+
 module.exports = {
     get_orders,
     get_order_details,
-    get_totalSales,
     post_order,
     update_order,
     delete_order,
+    get_totalSales,
+    best_seller
 }
