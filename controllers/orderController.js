@@ -18,6 +18,7 @@ const get_orders = async (req, res) => {
         }
 
         const orders = await Order.find(filter)
+        
             .populate({
                 path: 'orderItems',
                 populate: {
@@ -29,7 +30,7 @@ const get_orders = async (req, res) => {
         res.status(200).json({
             success: true,
             orderLength: orders.length,
-            productNames: productNames,
+            searchedProductNames: productNames,
             Orders: orders
         });
 
@@ -176,10 +177,23 @@ const delete_order = async (req, res) => {
     }
 }
 
+const get_totalSales = async (req,res) => {
+    const totalSales = await Order.aggregate([
+        { $group: { _id: null, totalSales: { $sum: '$totalPrice'}}}
+    ])
+
+    if(!totalSales || totalSales.length === 0) res.status(400).send('the order sales cannot be generated');
+    
+    res.send({ totalSales: totalSales});
+
+
+}
+
 module.exports = {
     get_orders,
     get_order_details,
+    get_totalSales,
     post_order,
     update_order,
-    delete_order
+    delete_order,
 }

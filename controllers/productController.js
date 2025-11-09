@@ -103,13 +103,13 @@ const product_update = async (req, res) => {
                 isFeatured: req.body.isFeatured,
                 dateCreated: req.body.dateCreated
             }, { new: true }).populate('category', 'name');
-            //? "new : true" line ensure the showing the updated product details in the console
+        //? "new : true" line ensure the showing the updated product details in the console
         res.send(product)
     } catch (error) {
         res.status(400).json({
             success: false,
             message: 'There is no product that you searched it'
-        }) 
+        })
 
     }
 }
@@ -164,17 +164,57 @@ const get_featured_products = async (req, res) => {
     }
 }
 
-const product_get_ids = async (req,res) => {
+const product_get_ids = async (req, res) => {
     try {
         const products = await Product.find().select('_id name');
-        
-        res.status(200).json({ 
+
+        res.status(200).json({
             success: true,
             categorys: products
         });
     } catch (error) {
-        res.status(500).json({ succes: false, message: error.message});
-    }  
+        res.status(500).json({ succes: false, message: error.message });
+    }
+}
+
+const accumulator = async (req, res) => {
+    const accumulate = await Product.aggregate([
+        {
+            $lookup: {
+                from: 'categories',
+                localField: 'category',
+                foreignField: '_id',
+                as: 'categoryData'
+            }
+        },
+        {
+            $unwind: '$categoryData'
+        },
+        { $group: { _id: '$categoryData._id', categoryName: { $first: '$categoryData.name'}, productInclude: {$sum: 1}, productNames: { $push: '$name' }} },
+        {
+            $project: {
+                _id: 0,
+                categoryId: '$_id',
+                categoryName: 1,
+                productInclude: 1,
+                productNames: 1
+            }
+        }
+    ])
+
+    if (accumulate.length == 0) res.send(400).send('The product informations cannot generetad');
+    res.send(accumulate);
+}
+
+const category_products = async (req, res) => {
+    const count = await Product.aggregate([
+        { $group: { _id: '$category', productCount: { $sum: 1 } } }
+    ])
+
+    res.json({
+        productCount: count,
+    });
+
 }
 
 module.exports = {
@@ -185,5 +225,6 @@ module.exports = {
     product_delete,
     count_of_products,
     get_featured_products,
-    product_get_ids
+    product_get_ids,
+    accumulator,
 }

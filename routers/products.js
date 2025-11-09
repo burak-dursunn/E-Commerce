@@ -10,5 +10,6 @@ router.delete(`/:id`, productController.product_delete);
 router.get('/get/count', productController.count_of_products);
 router.get('/get/featured{/:count}', productController.get_featured_products)
 router.get('/get/id', productController.product_get_ids);
+router.get('/get/accumulator', productController.accumulator);
 
 module.exports = router;
