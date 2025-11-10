@@ -283,10 +283,11 @@ const category_profits = async (req, res) => {
             },
             {
                 $project: {
-                    _id: 1,
+                    _id: 0,
+                    Category: '$_id',
                     totalProfit: { $round: ['$totalProfit', 2]},    
-                    totalSold: 1,
-                    products: 1,
+                    Sold: '$totalSold',
+                    Products: '$products',
                 }
             }
         ])
