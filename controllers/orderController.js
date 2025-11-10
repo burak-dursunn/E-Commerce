@@ -54,19 +54,19 @@ const get_order_details = async (req, res) => {
     }
 }
 
-const get_user_orders = async (req,res) => {
-    const userOrderList = await Order.findById({ user: req.param.user_id}).populate({
+const get_user_orders = async (req, res) => {
+    const userOrderList = await Order.findById({ user: req.param.user_id }).populate({
         path: 'OrderItems', populate: {
             path: 'product', populate: {
                 path: 'category', select: '-__v -color'
             }
         }
     })
-    if(userOrderList.length === 0) {
+    if (userOrderList.length === 0) {
         return res.status(400).send('Empty List')
     }
     res.send(userOrderList);
-    
+
 
 }
 const post_order = async (req, res) => {
@@ -240,7 +240,7 @@ const most_profitable = async (req, res) => {
             {
                 $group: {
                     _id: '$productData.name', totalProfit: { $sum: { $multiply: ['$productData.price', '$itemData.quantity'] } },
-                    price: {$sum: '$productData.price'},
+                    price: { $sum: '$productData.price' },
                     totalSold: { $sum: '$itemData.quantity' }
                 }
             },
@@ -265,6 +265,41 @@ const most_profitable = async (req, res) => {
     }
 }
 
+const category_profits = async (req, res) => {
+    try {
+        const profits = await Order.aggregate([
+            { $unwind: '$orderItems' },
+            { $lookup: { from: 'orderitems', localField: 'orderItems', foreignField: '_id', as: 'itemData' } },
+            { $unwind: '$itemData' },
+            { $lookup: { from: 'products', localField: 'itemData.product', foreignField: '_id', as: 'productData' } },
+            { $unwind: '$productData' },
+            { $lookup: { from: 'categories', localField: 'productData.category', foreignField: '_id', as: 'categoryData' } },
+            { $unwind: '$categoryData' },
+            {
+                $group: {
+                    _id: '$categoryData.name', totalProfit: { $sum: { $multiply: ['$productData.price', '$itemData.quantity'] } },
+                    totalSold: { $sum: '$itemData.quantity' }, products: { $addToSet: '$productData.name' },
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    totalProfit: { $round: ['$totalProfit', 2]},    
+                    totalSold: 1,
+                    products: 1,
+                }
+            }
+        ])
+        if (profits.length == 0) {
+            return res.status(400).send('Empty List');
+        }
+
+        res.send(profits);
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+}
+
 module.exports = {
     get_orders,
     get_order_details,
@@ -274,5 +309,6 @@ module.exports = {
     delete_order,
     get_totalSales,
     best_seller,
-    most_profitable
+    most_profitable,
+    category_profits
 }
