@@ -1,4 +1,3 @@
-const { multiply } = require('lodash');
 const { Order } = require('../models/order');
 const OrderItem = require('../models/order-item');
 const Product = require('../models/product');
@@ -19,17 +18,21 @@ const get_orders = async (req, res) => {
         }
 
         const orders = await Order.find(filter)
-
             .populate({
                 path: 'orderItems',
                 populate: {
                     path: 'product',
-                    select: 'name price'
+                    select: 'name price',
+                    populate: {
+                        path: 'category',
+                        select: '-__v -color'
+                    }
                 }
             }).populate('user', 'name').
             sort({ dataOrdered: -1 });
         res.status(200).json({
             success: true,
+            //todo we can use Order.countDocument instead of length for the length of orders
             orderLength: orders.length,
             searchedProductNames: productNames,
             Orders: orders
@@ -41,7 +44,6 @@ const get_orders = async (req, res) => {
     }
 }
 
-
 const get_order_details = async (req, res) => {
     try {
         const orderDetails = await Order.findById(req.params.id);
@@ -50,6 +52,22 @@ const get_order_details = async (req, res) => {
     } catch (error) {
         res.status(404).json({ succes: false, message: error.message })
     }
+}
+
+const get_user_orders = async (req,res) => {
+    const userOrderList = await Order.findById({ user: req.param.user_id}).populate({
+        path: 'OrderItems', populate: {
+            path: 'product', populate: {
+                path: 'category', select: '-__v -color'
+            }
+        }
+    })
+    if(userOrderList.length === 0) {
+        return res.status(400).send('Empty List')
+    }
+    res.send(userOrderList);
+    
+
 }
 const post_order = async (req, res) => {
 
@@ -250,6 +268,7 @@ const most_profitable = async (req, res) => {
 module.exports = {
     get_orders,
     get_order_details,
+    get_user_orders,
     post_order,
     update_order,
     delete_order,

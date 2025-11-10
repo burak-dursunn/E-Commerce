@@ -7,6 +7,8 @@ router.get('/:id', orderController.get_order_details);
 router.post('/', orderController.post_order);
 router.put('/:id', orderController.update_order);
 router.delete('/:id', orderController.delete_order);
+
+router.get('/get/user-orders/:user_id', orderController.get_user_orders);
 router.get('/get/total-sales', orderController.get_totalSales);
 router.get('/get/best-seller', orderController.best_seller);
 router.get('/get/most-profitable', orderController.most_profitable);
