@@ -7,7 +7,7 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "start": "nodemon app"
   },
   "dependencies": {
@@ -21,5 +21,8 @@
     "mongoose": "^8.19.1",
     "morgan": "^1.10.1",
     "nodemon": "^3.1.10"
+  },
+  "devDependencies": {
+    "jest": "^30.2.0"
   }
 }

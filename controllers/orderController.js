@@ -301,6 +301,26 @@ const category_profits = async (req, res) => {
     }
 }
 
+const user_spendings = async (req, res) => {
+    const spendings = await Order.aggregate([
+        { $group: { _id: '$user', totalSpend: { $sum: '$totalPrice'}, orderCount: { $sum: 1}}},
+        { $sort: { totalSpend: -1}},
+        { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'userData'}},
+        { $unwind: '$userData'},
+        { $project: {
+            _id: 0,
+            customer: '$userData.name',
+            orderCount: '$orderCount',
+            totalSpend: '$totalSpend'
+        }}
+    ])
+    if(spendings.length === 0) {
+        return res.status(400).send('Empty List')
+    }
+
+    res.send(spendings);
+}
+
 module.exports = {
     get_orders,
     get_order_details,
@@ -311,5 +331,6 @@ module.exports = {
     get_totalSales,
     best_seller,
     most_profitable,
-    category_profits
+    category_profits,
+    user_spendings,
 }
