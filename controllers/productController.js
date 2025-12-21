@@ -35,7 +35,7 @@ const product_create_post = async (req, res) => {
     try {
         const category = await Category.findById(req.body.category);
         if (!category) {
-            return res.status(400).send('No category found with the provided ID.');
+            return res.status(400).send('No category was found for the provided ID.');
         }
 
         const product = new Product({
@@ -60,7 +60,11 @@ const product_create_post = async (req, res) => {
         res.status(201).send(savedProduct);
 
     } catch (err) {
-        res.status(500).send('An unexpected error occurred.');
+        res.status(500).json({
+            success: false,
+            message: 'An unexpected error occurred on the server side during the creation process.',
+            details: error.details
+        });
         console.error(err);
     }
 };
@@ -101,7 +105,6 @@ const product_update = async (req, res) => {
                 rating: req.body.rating,
                 numReviews: req.body.numReviews,
                 isFeatured: req.body.isFeatured,
-                dateCreated: req.body.dateCreated
             }, { new: true }).populate('category', 'name');
         //? "new : true" line ensure the showing the updated product details in the console
         res.send(product)
@@ -116,7 +119,15 @@ const product_update = async (req, res) => {
 
 const product_delete = async (req, res) => {
     try {
-        const object = await Product.findByIdAndDelete(req.params.id);
+        const { id } = req.params;
+        const object = await Product.findByIdAndDelete(id);
+        if (!object) {
+            res.status(404).json({
+                success: false,
+                message: "Product was not found"
+            })
+        }
+
         console.log(`DELETE: Requested product object "${id}" was deleted`);
         res.status(201).json({ success: true, message: `DELETE: Product object "${id}" was deleted` })
 
@@ -126,6 +137,37 @@ const product_delete = async (req, res) => {
             details: error.details,
             success: false,
         })
+    }
+}
+
+const soft_delete = async (req,res) => {
+    try {
+        const { id } = req.params;
+        const product = await Product.findById(id);
+        if(!product || product.$isDeleted) {
+            return res.status(404).json({
+                success: false,
+                message: "The product provided ID could not be found"
+            })
+        }
+        
+        product.$isDeleted = true;
+        product.deletedAt = Date.now();
+        
+        await product.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Product has been soft deleted"
+        })
+
+        
+    } catch (error) {
+        return res.statsu(500).json({
+            success: false,
+            message: "An unexptected server error occurred"
+        })
+        
     }
 }
 
@@ -168,6 +210,13 @@ const product_get_ids = async (req, res) => {
     try {
         const products = await Product.find().select('_id name');
 
+        if(products.length() === 0) {
+            return self.status(400).json({
+                success: false,
+                message: "Empty List"
+            })
+        }
+
         res.status(200).json({
             success: true,
             categorys: products
@@ -180,17 +229,10 @@ const product_get_ids = async (req, res) => {
 //! Kategorilere göre gruplama
 const accumulator = async (req, res) => {
     const accumulate = await Product.aggregate([
-        {
-            $lookup: {
-                from: 'categories',
-                localField: 'category',
-                foreignField: '_id',
-                as: 'categoryData'
-            }
+        { $lookup: { from: 'categories', localField: 'category', foreignField: '_id', as: 'categoryData' }
         },
-        {
-            $unwind: '$categoryData'
-        },
+        { $sort: { price: -1}},
+        { $unwind: '$categoryData' },
         { $group: { _id: '$categoryData._id', categoryName: { $first: '$categoryData.name'}, 
                     productInclude: {$sum: 1}, productNames: { $push: '$name' }, 
                     totalPrice: {$sum: '$price'}} },
@@ -216,6 +258,7 @@ module.exports = {
     product_get_details,
     product_update,
     product_delete,
+    soft_delete,
     count_of_products,
     get_featured_products,
     product_get_ids,

@@ -1,33 +1,44 @@
 const Category = require('../models/category');
 const mongoose= require('mongoose');
+
 const category_create_get = async (req,res) => {
     try {
-        const categoryList = await Category.find();
-        res.send(categoryList);
+        const category = await Category.find()
+        if(category.length() === 0) {
+            res.status(200).json( {
+                message: "Category List is empty"
+            })
+        }
+        res.send(category)
     } catch (error) {
-        res.status(404).json({
-        success: false, 
-        message: 'There is an error with wihle trying to get the catregoires',
-        details: error.details
-        })
+
+        res.status(404). json({
+            success: false,
+            message: 'There is an error occuiped while trying to get the categories',
+            details: error.details
+        })        
     }
 }
 const category_create_post = async (req,res) => {
-    const category = new Category ({
-        name: req.body.name,
-        icon: req.body.icon,
-        color: req.body.color,
-    })
     try {
-        createdCategory = await category.save();
+        const category = new Category ({
+            name: req.body.name,
+            icon: req.body.icon,
+            color: req.body.color,
+        })
+
+        const createdCategory = await category.save();
+        if(!createadCategory) {
+            return res.status(400).json({ message: "The category could not be created"})
+        }
+        //* Category Creation Successful
         res.status(201).send(category); 
     } catch (error) {
         return res.status(404).json({
             success: false,
-            error: 'An error occurred while trying the create the requested category on the server side',
+            error: 'An error occurred during the trying the create the requested category on the server side',
             details: error.details,
-        })
-        
+        })    
     }
 }
 

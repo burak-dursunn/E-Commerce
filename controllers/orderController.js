@@ -217,7 +217,7 @@ const best_seller = async (req, res) => {
             { $lookup: { from: 'products', localField: 'itemData.product', foreignField: '_id', as: 'productData' } },
             { $unwind: '$productData' },
             { $group: { _id: '$productData.name', totalSold: { $sum: '$itemData.quantity' } } },
-            { $sort: { totalSold: -1 } },
+            { $sort: { totalSold: -1 } }, 
             { $project: { _id: 1, product: '$productData.name', totalSold: 1 } },
         ])
         if (bestSeller.length === 0) {
@@ -250,7 +250,7 @@ const most_profitable = async (req, res) => {
                     _id: 1,
                     Price: '$price',
                     Sold: '$totalSold',
-                    Profit: '$totalProfit'
+                    Profit: { $round: ["$totalProfit", 2]}
                 }
             }
         ])
@@ -285,7 +285,7 @@ const category_profits = async (req, res) => {
                 $project: {
                     _id: 0,
                     Category: '$_id',
-                    totalProfit: { $round: ['$totalProfit', 2]},    
+                    totalProfit: { $round: ['$totalProfit', 2]}, //! round   
                     Sold: '$totalSold',
                     Products: '$products',
                 }

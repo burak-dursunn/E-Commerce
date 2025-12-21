@@ -33,7 +33,7 @@ mongoose.connect(connectionString)
         console.log(`ERROR:${err}`);
     })
 
-//! Importing the Routers
+//! Defining the Routers
 const categoryRoutes = require('./routers/categories');
 const orderRoutes = require('./routers/orders');
 const productRoutes = require('./routers/products');
@@ -46,6 +46,7 @@ app.use((req, res, next) => {
     else console.log('request was made')
     next();
 })
+
 //! Products Route
 app.use(`${api}/products`, productRoutes)
 app.use(`${api}/categories`, categoryRoutes)
