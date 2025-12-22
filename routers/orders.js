@@ -7,6 +7,8 @@ router.get('/:id', orderController.get_order_details);
 router.post('/', orderController.post_order); //* user
 router.put('/:id', orderController.update_order);
 router.delete('/:id', orderController.delete_order);
+router.delete("/cancel-order(:id", orderController.cancel_order);
+router.delete('/soft-delete/:id', orderController.order_soft_delete);
 //! Aggragation Functions
 router.get('/get/user-orders/:user_id', orderController.get_user_orders);
 router.get('/get/total-sales', orderController.get_totalSales);

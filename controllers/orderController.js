@@ -200,14 +200,14 @@ const cancel_order = async (req, res) => {
     try {
         const id = req.params.id;
         const order = await Order.findById(id);
-        if(!order) {
+        if (!order) {
             re.status(404).json({
                 success: false,
                 message: "Order not found"
             })
         }
         //todo Ask the customer if he/she is sure he/she really want to cancel his/her order on frontend.
-        for(const itemId of order.orderItems) {
+        for (const itemId of order.orderItems) {
             try {
                 const deletedOrderItem = await OrderItem.findByIdAndDelete(itemId);
                 console.log(`Order Item ${itemID} has deleted!!`);
@@ -217,10 +217,10 @@ const cancel_order = async (req, res) => {
                     success: false,
                     message: 'OrderItems: Sunucu tarafında silme işlemi sırasında hata oluştu',
                     details: error.message
-                });             
+                });
             }
         }
-        
+
         const deletedOrder = await Order.findByIdAndDelete(id)
         console.log(`DELETE: Requested Order "${id}" was deleted`);
         res.status(200).json({ success: true, message: `DELETE: Order "${id}" was deleted` })
@@ -231,6 +231,43 @@ const cancel_order = async (req, res) => {
             details: error.message,
             success: false,
         })
+    }
+}
+
+const order_soft_delete = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const order = await Order.findById(id);
+        if(!order || order.isDeleted) {
+            return es.status(404).json({
+                success: false,
+                message: "Order with givin ID could not be found"
+            })
+        }
+
+        for(const itemId of order.orderItems) {
+            const deletedOrderItem = await OrderItem.findById(itemId);
+            deletedOrderItem.$isDeleted = true;
+            deletedOrderItem.deletedAt = Date.now();
+
+            await deletedOrderItem.save();
+        }
+        
+        order.isDeleted = true;
+        order.deletedAt = Date.now();
+
+        await order.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "The Order has been soft deleted"
+        })
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
+        });
     }
 }
 
@@ -255,7 +292,7 @@ const best_seller = async (req, res) => {
             { $lookup: { from: 'products', localField: 'itemData.product', foreignField: '_id', as: 'productData' } },
             { $unwind: '$productData' },
             { $group: { _id: '$productData.name', totalSold: { $sum: '$itemData.quantity' } } },
-            { $sort: { totalSold: -1 } }, 
+            { $sort: { totalSold: -1 } },
             { $project: { _id: 1, product: '$productData.name', totalSold: 1 } },
         ])
         if (bestSeller.length === 0) {
@@ -288,7 +325,7 @@ const most_profitable = async (req, res) => {
                     _id: 1,
                     Price: '$price',
                     Sold: '$totalSold',
-                    Profit: { $round: ["$totalProfit", 2]}
+                    Profit: { $round: ["$totalProfit", 2] }
                 }
             }
         ])
@@ -323,7 +360,7 @@ const category_profits = async (req, res) => {
                 $project: {
                     _id: 0,
                     Category: '$_id',
-                    totalProfit: { $round: ['$totalProfit', 2]}, //! round   
+                    totalProfit: { $round: ['$totalProfit', 2] }, //! round   
                     Sold: '$totalSold',
                     Products: '$products',
                 }
@@ -341,18 +378,20 @@ const category_profits = async (req, res) => {
 
 const user_spendings = async (req, res) => {
     const spendings = await Order.aggregate([
-        { $group: { _id: '$user', totalSpend: { $sum: '$totalPrice'}, orderCount: { $sum: 1}}},
-        { $sort: { totalSpend: -1}},
-        { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'userData'}},
-        { $unwind: '$userData'},
-        { $project: {
-            _id: 0,
-            customer: '$userData.name',
-            orderCount: '$orderCount',
-            totalSpend: '$totalSpend'
-        }}
+        { $group: { _id: '$user', totalSpend: { $sum: '$totalPrice' }, orderCount: { $sum: 1 } } },
+        { $sort: { totalSpend: -1 } },
+        { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'userData' } },
+        { $unwind: '$userData' },
+        {
+            $project: {
+                _id: 0,
+                customer: '$userData.name',
+                orderCount: '$orderCount',
+                totalSpend: '$totalSpend'
+            }
+        }
     ])
-    if(spendings.length === 0) {
+    if (spendings.length === 0) {
         return res.status(400).send('Empty List')
     }
 
@@ -367,6 +406,7 @@ module.exports = {
     update_order,
     delete_order,
     cancel_order,
+    order_soft_delete,
     get_totalSales,
     best_seller,
     most_profitable,

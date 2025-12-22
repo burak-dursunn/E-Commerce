@@ -86,6 +86,32 @@ const delete_user = async (req, res) => {
 
 }
 
+const user_soft_delete = async (req, res) => {
+        try {
+        const { id } = req.params;
+        const deletedUser = await User.findById(id);
+        if (!deletedUser || deletedUser.$isDeleted) {
+            return res.status(404).json({
+                success: false,
+                message: `User with id: "${id}" not found`
+            });
+        }
+
+        deletedUser.$isDeleted = true;
+        deletedUser.deletedAt = Date.now();
+
+        res.status(200).json({
+            success: true,
+            message: `DELETE: User "${id}" has been soft deleted`
+        })
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        })
+    }
+}
+
 //! Login
 const user_login = async (req,res) => {
     try {
@@ -140,6 +166,7 @@ module.exports = {
     get_user_details,
     user_post,
     delete_user,
+    user_soft_delete,
     user_login,
     count_of_users,
 }

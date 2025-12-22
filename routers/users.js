@@ -7,6 +7,7 @@ router.get('/', userController.user_get)
 router.post('/', userController.user_post) //* user
 router.get('/:id', userController.get_user_details)
 router.delete('/:id',userController.delete_user);
+router.delete('/soft-delete/:id', userController.user_soft_delete);
 router.get('/get/count', userController.count_of_users);
 
 //! Login
