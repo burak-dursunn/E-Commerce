@@ -14,6 +14,7 @@ router.get('/get/best-seller', orderController.best_seller); //* user
 router.get('/get/most-profitable', orderController.most_profitable);
 router.get('/get/category-profits', orderController.category_profits);
 router.get('/get/user-spendings', orderController.user_spendings);
+router.get('/cancel-order/:id', orderController.cancel_order);
 
 
 

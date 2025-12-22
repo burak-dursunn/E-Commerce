@@ -196,6 +196,44 @@ const delete_order = async (req, res) => {
     }
 }
 
+const cancel_order = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const order = await Order.findById(id);
+        if(!order) {
+            re.status(404).json({
+                success: false,
+                message: "Order not found"
+            })
+        }
+        //todo Ask the customer if he/she is sure he/she really want to cancel his/her order on frontend.
+        for(const itemId of order.orderItems) {
+            try {
+                const deletedOrderItem = await OrderItem.findByIdAndDelete(itemId);
+                console.log(`Order Item ${itemID} has deleted!!`);
+            } catch (error) {
+                console.error('OrderItem silme hatası:', error.message);
+                return res.status(500).json({
+                    success: false,
+                    message: 'OrderItems: Sunucu tarafında silme işlemi sırasında hata oluştu',
+                    details: error.message
+                });             
+            }
+        }
+        
+        const deletedOrder = await Order.findByIdAndDelete(id)
+        console.log(`DELETE: Requested Order "${id}" was deleted`);
+        res.status(200).json({ success: true, message: `DELETE: Order "${id}" was deleted` })
+
+    } catch (error) {
+        return res.status(404).json({
+            error: 'ORDER: Sunucu tarafında silme işlemi sırasında hata oluştu',
+            details: error.message,
+            success: false,
+        })
+    }
+}
+
 const get_totalSales = async (req, res) => {
     const totalSales = await Order.aggregate([
         { $group: { _id: null, totalSales: { $sum: '$totalPrice' } } }
@@ -328,6 +366,7 @@ module.exports = {
     post_order,
     update_order,
     delete_order,
+    cancel_order,
     get_totalSales,
     best_seller,
     most_profitable,
