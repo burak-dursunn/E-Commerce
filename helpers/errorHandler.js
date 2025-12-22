@@ -1,5 +1,5 @@
 function errorHandler(err,req,res,next) {
-    if(err.name === 'UnauthorizedE rror') {
+    if(err.name === 'Unauthorized rror') {
         res.status(401).json({errorName: err.name, message: 'The user is not authorized'})
     }
     else if (err.name === 'Validation Error') {
