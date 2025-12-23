@@ -1,6 +1,7 @@
 const { Order } = require('../models/order');
 const OrderItem = require('../models/order-item');
 const Product = require('../models/product');
+const mongoose = require('mongoose');
 
 const get_orders = async (req, res) => {
     try {
@@ -47,6 +48,12 @@ const get_orders = async (req, res) => {
 const get_order_details = async (req, res) => {
     try {
         const orderDetails = await Order.findById(req.params.id);
+        if (!orderDetails) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order with givin ID could not be found'
+            })
+        }
         res.status(200).send(orderDetails);
 
     } catch (error) {
@@ -54,21 +61,6 @@ const get_order_details = async (req, res) => {
     }
 }
 
-const get_user_orders = async (req, res) => {
-    const userOrderList = await Order.findById({ user: req.param.user_id }).populate({
-        path: 'OrderItems', populate: {
-            path: 'product', populate: {
-                path: 'category', select: '-__v -color'
-            }
-        }
-    })
-    if (userOrderList.length === 0) {
-        return res.status(400).send('Empty List')
-    }
-    res.send(userOrderList);
-
-
-}
 const post_order = async (req, res) => {
 
     try {
@@ -155,7 +147,6 @@ const update_order = async (req, res) => {
     }
 }
 
-
 const delete_order = async (req, res) => {
     try {
         const id = req.params.id;
@@ -210,7 +201,7 @@ const cancel_order = async (req, res) => {
         for (const itemId of order.orderItems) {
             try {
                 const deletedOrderItem = await OrderItem.findByIdAndDelete(itemId);
-                console.log(`Order Item ${itemID} has deleted!!`);
+                console.log(`Order Item ${itemId} has deleted!!`);
             } catch (error) {
                 console.error('OrderItem silme hatası:', error.message);
                 return res.status(500).json({
@@ -238,21 +229,21 @@ const order_soft_delete = async (req, res) => {
     try {
         const { id } = req.params;
         const order = await Order.findById(id);
-        if(!order || order.isDeleted) {
+        if (!order || order.isDeleted) {
             return es.status(404).json({
                 success: false,
                 message: "Order with givin ID could not be found"
             })
         }
 
-        for(const itemId of order.orderItems) {
+        for (const itemId of order.orderItems) {
             const deletedOrderItem = await OrderItem.findById(itemId);
             deletedOrderItem.$isDeleted = true;
             deletedOrderItem.deletedAt = Date.now();
 
             await deletedOrderItem.save();
         }
-        
+
         order.isDeleted = true;
         order.deletedAt = Date.now();
 
@@ -398,6 +389,69 @@ const user_spendings = async (req, res) => {
     res.send(spendings);
 }
 
+const user_orders = async (req, res) => {
+    const { id } = req.params;
+    const userOrders = await Order.aggregate([
+        { $match: { user: new mongoose.Types.ObjectId(id) } },
+        { $lookup: { from: 'orderitems', localField: 'orderItems', foreignField: '_id', as: 'orderItemData' } },
+        { $unwind: '$orderItemData' },
+        { $lookup: { from: 'products', localField: 'orderItemData.product', foreignField: '_id', as: 'productData' } },
+        { $unwind: '$productData' },
+        { $lookup: { from: 'categories', localField: 'productData.category', foreignField: '_id', as: 'categoryData' } },
+        { $unwind: '$categoryData' },
+        { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'userData'}},
+        { $unwind: '$userData'},
+
+        { $group: { _id: '$_id', orderItems: { $push: {
+                        quantity: '$orderItemData.quantity',
+                        productName: '$productData.name',
+                        category: '$categoryData.name'
+                    } }, userName: { $first: "$userData.name"}}},
+                    
+        { $group: { _id: "$userName", orderCount: { $sum: 1 }, orders: { $push: {
+                    orderId: '$_id',
+                    orderItems: '$orderItems'} }}},
+        {
+            $project: {
+                _id: 0,
+                userId: '$_id',
+                countOfOrders: '$orderCount',
+                orderItems: '$orders'
+            }
+        }
+
+    ])
+    res.send(userOrders);
+
+}
+
+const get_user_orders = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const orders = await Order.find({ user: id }).populate({
+            path: 'orderItems', populate: {
+                path: 'product', populate: 'category'
+            }
+        });
+        if (!orders) {
+            return res.status(404).json({
+                success: false,
+                message: "User orders has not found."
+            })
+        }
+        res.status(200).json({
+            success: true,
+            orderLength: orders.length,
+            orders: orders
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        })
+    }
+}
+
 module.exports = {
     get_orders,
     get_order_details,
@@ -412,4 +466,5 @@ module.exports = {
     most_profitable,
     category_profits,
     user_spendings,
+    user_orders
 }
