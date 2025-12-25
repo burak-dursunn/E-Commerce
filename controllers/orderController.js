@@ -64,7 +64,43 @@ const get_order_details = async (req, res) => {
 const post_order = async (req, res) => {
 
     try {
-        //! Save each order item individually.
+        //! Stock Check
+        const orderItems = req.body.orderItems;
+        const productIds = orderItems.map(item => item.product);
+        const products = await Product.find({ _id: { $in: productIds } });
+        const productMap = new Map();
+        products.forEach(p => {
+            productMap.set(p._id.toString(), p);
+        })
+        const stockErrors = [];
+        for (const item of orderItems) {
+            const product = productMap.get(item.product.toString());
+            if(!product) {
+                stockErrors.push({
+                    productId: item.product,
+                    error: "Product has not found"
+                })
+            }
+
+            if (item.quantity > product.countInStock) {
+                stockErrors.push({
+                    productId: product._id,
+                    productName: product.name,
+                    requestedQuantity: item.quantity,
+                    countInStock: product.countInStock
+                })
+            }
+        }
+        //! Display the error if there is an problem with the stock.
+        if (stockErrors.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Insufficient stock problem for some products",
+                stockErrors
+            })
+        }
+
+        //! Save each order item individually firstly.
         const orderItemsIds = await Promise.all(
             req.body.orderItems.map(async orderItem => {
                 let newOrderItem = new OrderItem({
@@ -101,6 +137,16 @@ const post_order = async (req, res) => {
         if (!savedOrder) {
             return res.status(500).send('the order could not be saved')
         }
+        //! Updating stock
+        await Promise.all(
+            orderItems.map(item => {
+                const products = productMap.get(item.product.toString());
+                console.log(`Product ${item.product}  Stock Update: ${products.countInstock} --> ${products.CountInStock - item.quantity}`)
+                Product.findByIdAndUpdate(item.product,
+                    { $inc : { countInStock: -item.quantity } }
+                )
+            })
+        )
         //* Order Creation Successfull
         res.status(201).send(savedOrder);
     } catch (error) {

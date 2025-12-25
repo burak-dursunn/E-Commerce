@@ -210,8 +210,8 @@ const product_get_ids = async (req, res) => {
     try {
         const products = await Product.find().select('_id name');
 
-        if(products.length() === 0) {
-            return self.status(400).json({
+        if(products.length === 0) {
+            return res.status(400).json({
                 success: false,
                 message: "Empty List"
             })
@@ -219,7 +219,7 @@ const product_get_ids = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            categorys: products
+            products: products
         });
     } catch (error) {
         res.status(500).json({ succes: false, message: error.message });

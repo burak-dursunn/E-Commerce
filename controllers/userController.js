@@ -147,6 +147,26 @@ const user_login = async (req,res) => {
     }
 }
 
+const user_get_ids = async (req, res) => {
+    try {
+        const users = await User.find().select('id name');
+
+        if(users.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Empty List"
+            })
+        }
+
+        res.status(200).json({
+            success: true,
+            users: users
+        });
+    } catch (error) {
+        res.status(500).json({ succes: false, message: error.message });
+    }
+}
+
 const count_of_users = async (req,res) => {
     const userCount = await User.countDocuments();
 
@@ -168,5 +188,6 @@ module.exports = {
     delete_user,
     user_soft_delete,
     user_login,
+    user_get_ids,
     count_of_users,
 }

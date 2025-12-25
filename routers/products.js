@@ -12,7 +12,7 @@ router.delete(`/soft-delete/:id`, productController.soft_delete);   //* admin
 //? Instead, We are set the isDeleted field to true. So that it's mark as deleted. If we need te soft-deleted product in the future, we can restore it from our database
 router.get('/get/count', productController.count_of_products);//* admin
 router.get('/get/featured{/:count}', productController.get_featured_products) //* admin
-router.get('/get/id', productController.product_get_ids); //* admin
+router.get('/get/ids', productController.product_get_ids); //* admin
 router.get('/get/accumulator', productController.accumulator); 
 
 module.exports = router;
