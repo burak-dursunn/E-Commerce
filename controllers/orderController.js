@@ -83,6 +83,7 @@ const post_order = async (req, res) => {
             }
 
             if (item.quantity > product.countInStock) {
+                console.log(`Overstock Error: ${product.name}`)
                 stockErrors.push({
                     productId: product._id,
                     productName: product.name,
@@ -139,10 +140,10 @@ const post_order = async (req, res) => {
         }
         //! Updating stock
         await Promise.all(
-            orderItems.map(item => {
+            orderItems.map(async item => {
                 const products = productMap.get(item.product.toString());
-                console.log(`Product ${item.product}  Stock Update: ${products.countInstock} --> ${products.CountInStock - item.quantity}`)
-                Product.findByIdAndUpdate(item.product,
+                console.log(`Product ${item.product}  Stock Update: ${products.countInStock} --> ${products.countInStock - item.quantity}`)
+                await Product.findByIdAndUpdate(item.product,
                     { $inc : { countInStock: -item.quantity } }
                 )
             })

@@ -73,13 +73,19 @@ const product_create_post = async (req, res) => {
 const product_get_details = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id).populate('category', 'name');
+        if(!product) {
+            return res.status(404).json({
+                success: false,
+                message: "No product found"
+            })
+        }
         res.status(200).send(product);
 
     } catch (error) {
         res.status(404).json({
             success: false,
             message: 'There is no product that you searched it',
-            details: error.details
+            details: error.message
         })
     }
 }
