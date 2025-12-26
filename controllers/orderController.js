@@ -158,30 +158,10 @@ const post_order = async (req, res) => {
 
 const update_order = async (req, res) => {
     try {
-        const orderItemsIds = await Promise.all(
-            req.body.orderItems.map(async orderItem => {
-                let updatedOrderItem = await OrderItem.findByIdAndUpdate(orderItem._id,
-                    {
-                        quantity: orderItem.quantity,
-                        product: orderItem.product
-                    }, { new: true })
-
-                return updatedOrderItem._id;
-            })
-        )
-
-        const updatedOrder = await Order.findByIdAndUpdate(req.params.id,
+        const { id } = req.params;
+        const updatedOrder = await Order.findByIdAndUpdate(id,
             {
-                orderItems: orderItemsIds,
                 status: req.body.status,
-                shippingAdress1: req.body.shippingAdress1,
-                shippingAdress2: req.body.shippingAdress2,
-                country: req.body.country,
-                city: req.body.city,
-                zip: req.body.zip,
-                phone: req.body.phone,
-                totalPrice: req.body.totalPrice,
-                user: req.body.user,
             }, { new: true }); //? "new : true" line ensure the showing the updated product details in the console
         res.status(200).send(updatedOrder);
 
@@ -237,7 +217,9 @@ const delete_order = async (req, res) => {
 const cancel_order = async (req, res) => {
     try {
         const id = req.params.id;
-        const order = await Order.findById(id);
+        const order = await Order.findByIdAndUpdate(id, {
+            status: 'cancelled'
+        }, { new: true});
         if (!order) {
             re.status(404).json({
                 success: false,
@@ -245,27 +227,25 @@ const cancel_order = async (req, res) => {
             })
         }
         //todo Ask the customer if he/she is sure he/she really want to cancel his/her order on frontend.
-        for (const itemId of order.orderItems) {
-            try {
-                const deletedOrderItem = await OrderItem.findByIdAndDelete(itemId);
-                console.log(`Order Item ${itemId} has deleted!!`);
-            } catch (error) {
-                console.error('OrderItem silme hatası:', error.message);
-                return res.status(500).json({
-                    success: false,
-                    message: 'OrderItems: Sunucu tarafında silme işlemi sırasında hata oluştu',
-                    details: error.message
-                });
-            }
-        }
+        // for (const itemId of order.orderItems) {
+        //     try {
+        //         const deletedOrderItem = await OrderItem.findByIdAndDelete(itemId);
+        //         console.log(`Order Item ${itemId} has deleted!!`);
+        //     } catch (error) {
+        //         console.error('OrderItem silme hatası:', error.message);
+        //         return res.status(500).json({
+        //             success: false,
+        //             message: 'OrderItems: Sunucu tarafında silme işlemi sırasında hata oluştu',
+        //             details: error.message
+        //         });
+        //     }
+        // }
 
-        const deletedOrder = await Order.findByIdAndDelete(id)
-        console.log(`DELETE: Requested Order "${id}" was deleted`);
-        res.status(200).json({ success: true, message: `DELETE: Order "${id}" was deleted` })
+        
 
     } catch (error) {
         return res.status(404).json({
-            error: 'ORDER: Sunucu tarafında silme işlemi sırasında hata oluştu',
+            error: 'ORDER: An error occured on the server side while cancelling order',
             details: error.message,
             success: false,
         })
