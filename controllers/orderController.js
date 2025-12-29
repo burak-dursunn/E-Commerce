@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const get_orders = async (req, res) => {
     try {
         //! http://localhost:3000/api/v1/orders?products=1234,53438,...
+        //! http://localhost:3000/api/v1/orders?status=cancelled, ,...
         let filter = {};
         let productNames = [];
         if (req.query.products) {
@@ -217,15 +218,17 @@ const delete_order = async (req, res) => {
 const cancel_order = async (req, res) => {
     try {
         const id = req.params.id;
-        const order = await Order.findByIdAndUpdate(id, {
+        const cancelledOrder = await Order.findByIdAndUpdate(id, {
             status: 'cancelled'
         }, { new: true});
-        if (!order) {
-            re.status(404).json({
+        if (!cancelledOrder) {
+            return res.status(404).json({
                 success: false,
                 message: "Order not found"
             })
         }
+
+        res.status(200).send(cancelledOrder);
         //todo Ask the customer if he/she is sure he/she really want to cancel his/her order on frontend.
         // for (const itemId of order.orderItems) {
         //     try {
@@ -245,9 +248,9 @@ const cancel_order = async (req, res) => {
 
     } catch (error) {
         return res.status(404).json({
+            success: false,
             error: 'ORDER: An error occured on the server side while cancelling order',
             details: error.message,
-            success: false,
         })
     }
 }
@@ -299,6 +302,45 @@ const get_totalSales = async (req, res) => {
     res.send({ totalSales: totalSales });
 
 
+}
+
+const get_orders_status = async (req, res) => {
+    try {
+        const ordersSummary = await Order.aggregate([
+            { $group: { _id: null, statuses: { $addToSet: '$status'}}}, //? addToSet is takes the unique object from the order list
+            { $project: {
+                _id: 0,
+                Status: '$statuses',
+            }}
+        ])
+        const ordersGroupedByStatus = await Order.aggregate([
+            { $group: { _id: "$status",  orderIds: { $addToSet:'$_id'}}}, //? addToSet is takes the unique object from the order list
+            { $project: {
+                _id: 0,
+                Status: '$_id',
+                orderIds: '$orderIds',
+            }}
+        ])
+
+        if( ordersSummary.length === 0 || ordersGroupedByStatus.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Empty List. No orders found'
+            })
+        }
+
+        res.status(200).json({
+            success: true,
+            summary: ordersSummary[0] || {},
+            groupedByStatus: ordersGroupedByStatus
+        })
+    } catch (error) {
+        res.status(500).send({ 
+            success: false, 
+            message: "Server Error",
+            details: error.message
+        });
+    }
 }
 
 const best_seller = async (req, res) => {
@@ -489,6 +531,7 @@ module.exports = {
     cancel_order,
     order_soft_delete,
     get_totalSales,
+    get_orders_status,
     best_seller,
     most_profitable,
     category_profits,

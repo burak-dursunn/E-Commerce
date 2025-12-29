@@ -12,6 +12,7 @@ router.delete('/soft-delete/:id', orderController.order_soft_delete);
 
 //! Aggragation Functions
 router.get('/get/total-sales', orderController.get_totalSales);
+router.get('/get/status', orderController.get_orders_status);
 router.get('/get/best-seller', orderController.best_seller); //* user
 router.get('/get/most-profitable', orderController.most_profitable);
 router.get('/get/category-profits', orderController.category_profits);
