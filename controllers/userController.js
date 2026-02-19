@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs'); //! for password hashing.
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 
 
 
@@ -66,67 +67,120 @@ const get_user_details = async (req, res) => {
 }
 
 const forgot_password = async (req, res) => {
-    const { email } = req.body;
-    const user = await User.findOne({ email });
-
-    if (!user)
-        return res.status(200).json({
-            succes: false,
-            message: "If this email exists, a reset link has been sent."
-        })
-
-    console.log(user);
-
-    if (user.resetPasswordToken &&
-        user.resetPasswordExpires > Date.now()) {
-        return res.status(400).json({
-            success: false,
-            message: "Reset Link already sent. Please check your inbox."
-        })
-    }
-
-    //! Token Hashing is required for security reasons. 
-    //! Saving token in database without hashing is a security risk.
-    const rawToken = crypto.randomBytes(32).toString('hex');
-    const hashedToken = await crypto
-        .createHash('sha256')
-        .update(rawToken)
-        .digest('hex');
-
-    user.resetPasswordToken = hashedToken;
-    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
-
-    await user.save();
-
-    const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.EMAIL,
-            pass: process.env.EMAIL_PASSWORD,
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+    
+        if (!user)
+            return res.status(200).json({
+                succes: false,
+                message: "If this email exists, a reset link has been sent."
+            })
+    
+        console.log(user);
+    
+        if (user.resetPasswordToken &&
+            user.resetPasswordExpires > Date.now()) {
+            return res.status(400).json({
+                success: false,
+                message: "Reset Link already sent. Please check your inbox."
+            })
         }
-    })
-
-    const mailOptions = {
-        from: process.env.EMAIL,
-        to: user.email,
-        subject: 'Reset Password',
-        text: `You are receiving this email because you (or someone else) has requested to reset the password for your account.
-        If you did not request this, please ignore this email.
-        To reset your password, click on the following link:
-        ${process.env.CLIENT_URL}/forgot-password/${rawToken}
-        This link will expire in 15 minutes.
-        `
+    
+        //! Token Hashing is required for security reasons. 
+        //! Saving token in database without hashing is a security risk.
+        const rawToken = crypto.randomBytes(32).toString('hex');
+        const hashedToken = await crypto
+            .createHash('sha256')
+            .update(rawToken)
+            .digest('hex');
+    
+        user.resetPasswordToken = hashedToken;
+        user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+    
+        await user.save();
+    
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL,
+                pass: process.env.EMAIL_PASSWORD,
+            }
+        })
+    
+        const mailOptions = {
+            from: process.env.EMAIL,
+            to: user.email,
+            subject: 'Reset Password',
+            text: `You are receiving this email because you (or someone else) has requested to reset the password for your account.
+            If you did not request this, please ignore this email.
+            To reset your password, click on the following link:
+            ${process.env.CLIENT_URL}/reset-password/${rawToken}
+            This link will expire in 15 minutes.
+            `
+        }
+        await transporter.sendMail(mailOptions);
+    
+        return res.status(200).json({
+            success: true,
+            message: "If this email exists, a reset link has been sent."
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        })
+        
     }
-    await transporter.sendMail(mailOptions);
-
-    return res.status(200).json({
-        success: true,
-        message: "If this email exists, a reset link has been sent."
-    });
 
 }
 
-//todo const reset_password 
+const reset_password = async (req, res) => {
+    try {
+        if (!token || !password) {
+            return res.status(400).json({
+                success: false,
+                message: "Token and password are required"
+            });
+        }
+    
+        const { token, password } = req.body;
+        const hashedToken = crypto
+            .createHash('sha256')
+            .update(token)
+            .digest('hex');
+    
+        const user = await User.findOne({
+            resetPasswordToken: hashedToken,
+            resetPasswordExpires: { $gt: Date.now() }
+        })
+    
+        if (!user)
+            return res.status(400).json({
+                success: false,
+                message: "Invalid or expired token"
+            });
+    
+        user.passwordHash = await bcrypt.hash(password, 12);
+        user.resetPasswordToken = null;
+        user.resetPasswordExpires = null;
+    
+        await user.save();
+    
+        console.log(`Password reset for user ${user._id} at ${new Date().toISOString()}`);
+    
+        return res.status(200).json({
+            success: true,
+            message: "Password reset successful. You can now login with your new password."
+        })
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: 'Internal Server Error'
+        })
+        
+    }
+}
 
 const delete_user = async (req, res) => {
     try {
@@ -258,4 +312,6 @@ module.exports = {
     user_login,
     user_get_ids,
     count_of_users,
+    forgot_password,
+    reset_password
 }
