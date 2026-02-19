@@ -69,11 +69,14 @@ const post_order = async (req, res) => {
         const orderItems = req.body.orderItems;
         const productIds = orderItems.map(item => item.product);
         const products = await Product.find({ _id: { $in: productIds } });
+
         const productMap = new Map();
         products.forEach(p => {
             productMap.set(p._id.toString(), p);
         })
+        
         const stockErrors = [];
+        //todo Here - 1
         for (const item of orderItems) {
             const product = productMap.get(item.product.toString());
             if(!product) {
@@ -104,7 +107,8 @@ const post_order = async (req, res) => {
 
         //! Save each order item individually firstly.
         const orderItemsIds = await Promise.all(
-            req.body.orderItems.map(async orderItem => {
+            //todo Here -2
+            orderItems.map(async orderItem => {
                 let newOrderItem = new OrderItem({
                     quantity: orderItem.quantity,
                     product: orderItem.product
@@ -141,6 +145,7 @@ const post_order = async (req, res) => {
         }
         //! Updating stock
         await Promise.all(
+            //todo Here - 3 
             orderItems.map(async item => {
                 const products = productMap.get(item.product.toString());
                 console.log(`Product ${item.product}  Stock Update: ${products.countInStock} --> ${products.countInStock - item.quantity}`)
