@@ -28,7 +28,7 @@ const user_get = async (req, res) => {
 const user_post = async (req, res) => {
     const user = new User({
         name: req.body.name,
-        email: req.body.email,
+        email: req.body.email.toLowerCase().trim(),
         passwordHash: await bcrypt.hash(req.body.password, 10),
 
         phone: req.body.phone,
@@ -40,6 +40,14 @@ const user_post = async (req, res) => {
         zip: req.body.zip,
     })
     try {
+        //! Checking if email already exists in the database
+        const userExists = await User.findOne({ email: req.body.email });
+        if (userExists) {
+            return res.status(400).json({
+                success: false,
+                message: "Email already exists"
+            });
+        }
         const savedUser = await user.save()
         //* User Creation Successful
         res.status(201).json({
