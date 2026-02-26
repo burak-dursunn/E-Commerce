@@ -70,15 +70,15 @@ const forgot_password = async (req, res) => {
     try {
         const { email } = req.body;
         const user = await User.findOne({ email });
-    
+
         if (!user)
             return res.status(200).json({
                 succes: false,
                 message: "If this email exists, a reset link has been sent."
             })
-    
+
         console.log(user);
-    
+
         if (user.resetPasswordToken &&
             user.resetPasswordExpires > Date.now()) {
             return res.status(400).json({
@@ -86,20 +86,20 @@ const forgot_password = async (req, res) => {
                 message: "Reset Link already sent. Please check your inbox."
             })
         }
-    
+
         //! Token Hashing is required for security reasons. 
         //! Saving token in database without hashing is a security risk.
         const rawToken = crypto.randomBytes(32).toString('hex');
-        const hashedToken = await crypto
+        const hashedToken = crypto
             .createHash('sha256')
             .update(rawToken)
             .digest('hex');
-    
+
         user.resetPasswordToken = hashedToken;
         user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
-    
+
         await user.save();
-    
+
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
@@ -107,7 +107,7 @@ const forgot_password = async (req, res) => {
                 pass: process.env.EMAIL_PASSWORD,
             }
         })
-    
+
         const mailOptions = {
             from: process.env.EMAIL,
             to: user.email,
@@ -120,7 +120,7 @@ const forgot_password = async (req, res) => {
             `
         }
         await transporter.sendMail(mailOptions);
-    
+
         return res.status(200).json({
             success: true,
             message: "If this email exists, a reset link has been sent."
@@ -130,7 +130,7 @@ const forgot_password = async (req, res) => {
             success: false,
             message: "Internal Server Error"
         })
-        
+
     }
 
 }
@@ -143,32 +143,32 @@ const reset_password = async (req, res) => {
                 message: "Token and password are required"
             });
         }
-    
+
         const { token, password } = req.body;
         const hashedToken = crypto
             .createHash('sha256')
             .update(token)
             .digest('hex');
-    
+
         const user = await User.findOne({
             resetPasswordToken: hashedToken,
             resetPasswordExpires: { $gt: Date.now() }
         })
-    
+
         if (!user)
             return res.status(400).json({
                 success: false,
                 message: "Invalid or expired token"
             });
-    
+
         user.passwordHash = await bcrypt.hash(password, 12);
         user.resetPasswordToken = null;
         user.resetPasswordExpires = null;
-    
+
         await user.save();
-    
+
         console.log(`Password reset for user ${user._id} at ${new Date().toISOString()}`);
-    
+
         return res.status(200).json({
             success: true,
             message: "Password reset successful. You can now login with your new password."
@@ -178,7 +178,7 @@ const reset_password = async (req, res) => {
             success: false,
             message: 'Internal Server Error'
         })
-        
+
     }
 }
 

@@ -19,14 +19,9 @@ function authJwt() {
 }
 
 async function isRevoked(req, token) {
-
-    // if(!token) return true; // Optionally check token existence
-
-    // Only revoke if specific conditions are met (e.g. blacklisted). 
-    // Do NOT block non-admins globally here unless the entire API is admin-only.
-    // Assuming we want to allow normal users:
+    // isRevoked is used only to check if a specific token is blacklisted.
+    // Authorization logic (e.g. Admin access) is handled explicitly in route middlewares.
     return false;
-
 }
 
 module.exports = authJwt;
