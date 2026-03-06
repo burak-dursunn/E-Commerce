@@ -1,106 +1,107 @@
 const Category = require('../models/category');
-const mongoose= require('mongoose');
+const mongoose = require('mongoose');
 
-const category_create_get = async (req,res) => {
+const category_create_get = async (req, res) => {
     try {
         const category = await Category.find()
-        if(category.length() === 0) {
-            res.status(200).json( {
+        if (category.length() === 0) {
+            res.status(200).json({
                 message: "Category List is empty"
             })
         }
         res.send(category)
     } catch (error) {
 
-        res.status(404). json({
+        res.status(404).json({
             success: false,
             message: 'There is an error occuiped while trying to get the categories',
             details: error.details
-        })        
+        })
     }
 }
-const category_create_post = async (req,res) => {
+const category_create_post = async (req, res) => {
     try {
-        const category = new Category ({
+        const category = new Category({
             name: req.body.name,
             icon: req.body.icon,
             color: req.body.color,
         })
 
         const createdCategory = await category.save();
-        if(!createadCategory) {
-            return res.status(400).json({ message: "The category could not be created"})
+        if (!createadCategory) {
+            return res.status(400).json({ message: "The category could not be created" })
         }
         //* Category Creation Successful
-        res.status(201).send(category); 
+        res.status(201).send(category);
     } catch (error) {
         return res.status(404).json({
             success: false,
             error: 'An error occurred during the trying the create the requested category on the server side',
             details: error.details,
-        })    
-    }
-}
-
-const only_ids = async (req,res) => {
-    try {
-        const categories = await Category.find().select('_id name');
-        
-        res.status(200).json({ 
-            success: true,
-            categorys: categories
-        });
-    } catch (error) {
-        res.status(500).json({ succes: false, message: error.message});
-    }  
-}
-
-const category_get_details = async (req,res) => {
-    try {
-        const category = await Category.findById(req.params.id);
-        res.status(200).send(category);
-        
-    } catch (error) {
-        res.status(404).json({
-        success: false, 
-        message: 'The category with the given ID was not found',
-        details: error.details
         })
     }
 }
 
-const category_update = async (req,res) => {
-    
+const only_ids = async (req, res) => {
     try {
-        const category = await Category.findByIdAndUpdate(req.params.id, 
-        {
-            name: req.body.name,
-            icon: req.body.icon,
-            color: req.body.color
-        }, { new : true}) //? "new : true" line ensure the showing the updated product details in the console
+        const categories = await Category.find().select('_id name');
+
+        res.status(200).json({
+            success: true,
+            categorys: categories
+        });
+    } catch (error) {
+        res.status(500).json({ succes: false, message: error.message });
+    }
+}
+
+const category_get_details = async (req, res) => {
+    try {
+        const category = await Category.findById(req.params.id);
+        res.status(200).send(category);
+
+    } catch (error) {
+        res.status(404).json({
+            success: false,
+            message: 'The category with the given ID was not found',
+            details: error.details
+        })
+    }
+}
+
+const category_update = async (req, res) => {
+
+    try {
+        const category = await Category.findByIdAndUpdate(req.params.id,
+            {
+                name: req.body.name,
+                icon: req.body.icon,
+                color: req.body.color
+            }, { new: true }) //? "new : true" line ensure the showing the updated product details in the console
         res.send(category)
-        
+
     } catch (error) {
         res.status(400).json({
             success: false,
             messaje: 'There is no category that you searched it'
         })
     }
-    
+
 }
 
-const category_delete = async (req,res) => {
+const category_delete = async (req, res) => {
     try {
-        const object = await Category.findByIdAndDelete(req.params.id);
+        const { id } = req.params;
+        const object = await Category.findByIdAndDelete(id);
         console.log(`DELETE: Requested category object "${id}" was deleted`);
-        res.status(201).json({ success: true, message: `DELETE: Catrgory object "${id}" was deleted`})
-        
+        res.status(200).json({ success: true, message: `DELETE: Catrgory object "${id}" was deleted` })
+
     } catch (error) {
         return res.status(404).json({
-                error: 'An error occured while trying the delete the requsted category object',
-                details: error.details,
-                success: false,
-            })
+            error: 'An error occured while trying the delete the requsted category object',
+            details: error.message,
+            success: false,
+        })
     }
 }
 
